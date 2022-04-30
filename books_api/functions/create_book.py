@@ -1,6 +1,7 @@
 from books_api.defines import api_defines as api_def
 from books_api.internal_functions.internal_create_book import get_book_data
 
+
 def external_create_book(kwargs):
     function_name = "external_create_book"
     try:

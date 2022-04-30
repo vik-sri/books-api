@@ -7,14 +7,14 @@ module_name = "internal_create_book"
 
 
 def get_book_data(book_id):
+    # Get metadata from gutenberg
     book_metadata_link = api_def.ENDPOINT_GUTENBERG_BOOK_METADATA + book_id
     req_obj = requests.get(book_metadata_link)
     soup = BeautifulSoup(req_obj.text, 'html.parser')
     metadata = soup.find("div", {"id": "bibrec"})
-
     title = (metadata.find("td", {"itemprop": "headline"})).string.replace("\n", "")
     author = metadata.find("a", {"itemprop": "creator"}).string.replace(" ", "").split(",")
-    author = " ".join(author[:-1])
+    author = " ".join(author[:-1][::-1])
     release_date = metadata.find("td", {"itemprop": "datePublished"}).string
 
     # Get categories from Google search
@@ -31,4 +31,27 @@ def get_book_data(book_id):
         "categories": categories,
         "release_date": release_date
     }
-    print(metadata_dict)
+
+    book_link = api_def.ENDPOINT_GUTENBERG_BOOK_FILE + book_id + "/" + book_id + "-h" + "/" + book_id + "-h" + ".htm"
+    req_obj_bookdata = requests.get(book_link)
+    book_soup = BeautifulSoup(req_obj_bookdata.text, 'html.parser')
+
+    chapters = book_soup.findAll(class_="chapter")
+    temp_dict = {}
+    for chapter in chapters:
+        chapter_name = chapter.find("h2").text.strip().lower()
+        paragraphs = chapter.findAll("p")
+        paragraphs_list = [para.text for para in paragraphs]
+        paragraphs_strip = [text.strip() for text in paragraphs_list]
+        paragraphs_strip_r = [text.replace('\r', '') for text in paragraphs_strip]
+        paragraphs_strip_n = [text.replace('\n', '') for text in paragraphs_strip_r]
+        paragraphs_cleaned = [" ".join(text.split()) for text in paragraphs_strip_n]
+        temp_dict[chapter_name] = paragraphs_cleaned
+
+    book_dict = {
+        'metadata': metadata_dict,
+        'data': temp_dict
+    }
+
+
+
